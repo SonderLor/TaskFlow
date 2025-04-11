@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: taskflow-postgres
+    environment:
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow_password
+      POSTGRES_DB: taskflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - taskflow-network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: taskflow-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@taskflow.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - taskflow-network
+    restart: unless-stopped
+
+  # Будущие сервисы (пока закомментированы)
+  # backend:
+  #   build: ./backend
+  #   container_name: taskflow-backend
+  #   volumes:
+  #     - ./backend:/app
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - taskflow-network
+  #   restart: unless-stopped
+
+  # frontend:
+  #   build: ./frontend
+  #   container_name: taskflow-frontend
+  #   volumes:
+  #     - ./frontend:/app
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - taskflow-network
+  #   restart: unless-stopped
+
+networks:
+  taskflow-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
