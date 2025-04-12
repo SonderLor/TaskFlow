@@ -16,9 +16,9 @@ if ! poetry run ruff --version > /dev/null 2>&1; then
   poetry install --with dev
 fi
 
-# Форматирование кода
+# Форматирование кода с исключениями
 echo "Running black..."
-poetry run black .
+poetry run black . --exclude "__init__.py"
 
 echo "Running isort..."
 poetry run isort .

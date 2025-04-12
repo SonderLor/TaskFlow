@@ -1,13 +1,21 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 
+from app.api.endpoints import auth, statuses, tasks, users
 from app.core.config import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc",
 )
+
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(statuses.router, prefix="/api/v1/statuses", tags=["statuses"])
 
 # Настройка CORS
 if settings.BACKEND_CORS_ORIGINS:
@@ -30,19 +38,7 @@ async def health_check():
     return {"status": "healthy"}
 
 
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-
-    openapi_schema = get_openapi(
-        title=app.title,
-        version="1.0.0",
-        description="TaskFlow API - система управления задачами",
-        routes=app.routes,
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app", host="0.0.0.0", port=8080, reload=True, reload_dirs=["app"]
     )
-
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi
