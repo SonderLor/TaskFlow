@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Импортируем конфигурацию и модели
 from app.core.config import settings
-from app.db.base_class import Base
+from app.db import Base
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

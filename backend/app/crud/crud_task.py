@@ -20,8 +20,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .options(
                 selectinload(Task.creator),
                 selectinload(Task.status),
-                selectinload(Task.assignees),
-                selectinload(Task.watchers),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
             )
         )
         result = await db.execute(query)
@@ -139,7 +139,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
         await db.commit()
         await db.refresh(db_obj)
-        return db_obj
+        return await self.get(db, id=db_obj.id)
 
     async def update(
         self,

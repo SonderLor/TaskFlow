@@ -7,7 +7,8 @@ from app.api.dependencies.auth import get_current_active_user, get_current_super
 from app.crud import user
 from app.db import get_db
 from app.models import User
-from app.schemas import User as UserSchema, UserCreate, UserUpdate
+from app.schemas import User as UserSchema
+from app.schemas import UserCreate, UserUpdate
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ async def read_users(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """
     Получение списка пользователей (только для суперпользователей)

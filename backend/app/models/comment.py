@@ -7,6 +7,7 @@ from app.db.base_class import Base
 
 
 class Comment(Base):
+    id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("task.id"))
     author_id = Column(Integer, ForeignKey("user.id"))
     text = Column(Text, nullable=False)
@@ -17,7 +18,7 @@ class Comment(Base):
     # Отношения
     task = relationship("Task", back_populates="comments")
     author = relationship("User", back_populates="comments")
-    mentions = relationship("CommentMention", back_populates="comment")
+    mentions = relationship("CommentMention", back_populates="comment", cascade="all, delete")
 
 
 class CommentMention(Base):

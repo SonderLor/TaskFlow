@@ -9,7 +9,6 @@ from app.core.security import decode_token
 from app.crud import user
 from app.db import get_db
 from app.models import User
-from app.schemas import TokenPayload
 
 # Определяем OAuth2 схему с путем получения токена
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")

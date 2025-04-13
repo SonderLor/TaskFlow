@@ -1,4 +1,4 @@
-from .comment import Comment, CommentCreate, CommentUpdate, CommentMention
+from .comment import Comment, CommentCreate, CommentMention, CommentUpdate
 from .status import TaskStatus, TaskStatusCreate, TaskStatusUpdate
-from .task import Task, TaskCreate, TaskUpdate, TaskDetail, TaskAssignee, TaskWatcher
-from .user import User, UserCreate, UserUpdate, UserInDB, Token, TokenPayload
+from .task import Task, TaskAssignee, TaskCreate, TaskDetail, TaskUpdate, TaskWatcher
+from .user import Token, TokenPayload, User, UserCreate, UserInDB, UserUpdate

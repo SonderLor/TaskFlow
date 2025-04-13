@@ -5,8 +5,7 @@ from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.tasks import check_task_permissions
 from app.crud import comment
 from app.db import get_db
-from app.models import Comment
-from app.models import User
+from app.models import Comment, User
 
 
 async def get_comment_by_id(

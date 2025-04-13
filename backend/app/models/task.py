@@ -7,6 +7,7 @@ from app.db.base_class import Base
 
 
 class Task(Base):
+    id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
     creator_id = Column(Integer, ForeignKey("user.id"))
@@ -19,9 +20,9 @@ class Task(Base):
         "User", back_populates="tasks_created", foreign_keys=[creator_id]
     )
     status = relationship("TaskStatus", back_populates="tasks")
-    assignees = relationship("TaskAssignee", back_populates="task")
-    watchers = relationship("TaskWatcher", back_populates="task")
-    comments = relationship("Comment", back_populates="task")
+    assignees = relationship("TaskAssignee", back_populates="task", cascade="all, delete")
+    watchers = relationship("TaskWatcher", back_populates="task", cascade="all, delete")
+    comments = relationship("Comment", back_populates="task", cascade="all, delete")
 
 
 class TaskAssignee(Base):

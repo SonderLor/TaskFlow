@@ -4,8 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_active_user
 from app.crud import task
 from app.db import get_db
-from app.models import Task
-from app.models import User
+from app.models import Task, User
 
 
 async def get_task_by_id(task_id: int, db: AsyncSession = Depends(get_db)) -> Task:

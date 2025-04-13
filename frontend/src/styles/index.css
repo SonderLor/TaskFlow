@@ -1,0 +1,120 @@
+body {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.task-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.task-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.task-title {
+  color: #212529;
+}
+
+.task-title:hover {
+  color: #0d6efd;
+}
+
+.avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.comment {
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: background-color 0.2s;
+}
+
+.comment:hover {
+  background-color: #f0f0f0;
+}
+
+/* Ensure the content takes at least some vertical space */
+.content-container {
+  min-height: calc(100vh - 160px);
+}
+
+/* Append these styles to your existing index.css */
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  padding: 80px 0;
+  margin-top: -24px; /* To offset the py-4 from content-container */
+}
+
+/* Features Section */
+.feature-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: rgba(13, 110, 253, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Card Hover Effects */
+.features-section .card {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.features-section .card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* CTA Section */
+.cta-section {
+  background-color: #f8f9fa;
+}
+
+/* Footer Social Icons */
+.social-icons a {
+  transition: color 0.3s;
+}
+
+.social-icons a:hover {
+  color: #0d6efd !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-section {
+    text-align: center;
+    padding: 60px 0;
+  }
+  .hero-section img {
+    margin-top: 30px;
+    max-height: 200px !important;
+  }
+}
+
+.custom-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  color: #333;
+  background-color: #fff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}

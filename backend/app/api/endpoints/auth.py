@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,8 @@ from app.core.security import create_access_token
 from app.crud import user
 from app.db import get_db
 from app.models import User
-from app.schemas import Token, User as UserSchema, UserCreate
+from app.schemas import Token, UserCreate
+from app.schemas import User as UserSchema
 
 router = APIRouter()
 
@@ -40,6 +41,13 @@ async def register_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exists",
+        )
+
+    existing_user = await user.get_by_username(db, username=user_data.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists",
         )
 
     await user.create(db, obj_in=user_data)

@@ -45,7 +45,17 @@ async def create_task(
     task_data = task_in.model_dump()
     task_data["creator_id"] = current_user.id
 
-    return await task.create(db, obj_in=TaskCreate(**task_data))
+    created_task = await task.create(db, obj_in=TaskCreate(**task_data))
+
+    return TaskDetail(
+        id=created_task.id,
+        title=created_task.title,
+        description=created_task.description,
+        creator=created_task.creator,
+        status=created_task.status,
+        assignees=[assignee.user for assignee in created_task.assignees],
+        watchers=[watcher.user for watcher in created_task.watchers],
+    )
 
 
 @router.get("/me", response_model=List[Task])
@@ -91,8 +101,8 @@ async def read_assigned_tasks(
     """
     Получение задач, назначенных текущему пользователю
     """
-    tasks = await task.get_by_assignee(
-        db, assignee_id=current_user.id, skip=skip, limit=limit
+    tasks = await task.get_assigned_to_user(
+        db, user_id=current_user.id, skip=skip, limit=limit
     )
     return tasks
 
@@ -107,8 +117,8 @@ async def read_watching_tasks(
     """
     Получение задач, за которыми наблюдает текущий пользователь
     """
-    tasks = await task.get_watched_tasks(
-        db, watcher_id=current_user.id, skip=skip, limit=limit
+    tasks = await task.get_watched_by_user(
+        db, user_id=current_user.id, skip=skip, limit=limit
     )
     return tasks
 
@@ -129,9 +139,17 @@ async def read_task(
         )
 
     # Проверка прав доступа к задаче
-    await check_task_permissions(db, task=db_task, user=current_user)
+    await check_task_permissions(db_task=db_task, current_user=current_user)
 
-    return db_task
+    return TaskDetail(
+        id=db_task.id,
+        title=db_task.title,
+        description=db_task.description,
+        creator=db_task.creator,
+        status=db_task.status,
+        assignees=[assignee.user for assignee in db_task.assignees],
+        watchers=[watcher.user for watcher in db_task.watchers],
+    )
 
 
 @router.put("/{task_id}", response_model=TaskDetail)
@@ -152,9 +170,20 @@ async def update_task(
         )
 
     # Проверка прав на редактирование задачи
-    await check_task_edit_permissions(db, task=db_task, user=current_user)
+    await check_task_edit_permissions(db_task=db_task, current_user=current_user)
 
-    return await task.update(db, db_obj=db_task, obj_in=task_in)
+    updated_task = await task.update(db, db_obj=db_task, obj_in=task_in)
+    await db.refresh(updated_task)
+
+    return TaskDetail(
+        id=updated_task.id,
+        title=updated_task.title,
+        description=updated_task.description,
+        creator=updated_task.creator,
+        status=updated_task.status,
+        assignees=[assignee.user for assignee in updated_task.assignees],
+        watchers=[watcher.user for watcher in updated_task.watchers],
+    )
 
 
 @router.delete("/{task_id}", response_model=TaskDetail)
@@ -174,6 +203,16 @@ async def delete_task(
         )
 
     # Проверка прав на удаление задачи
-    await check_task_delete_permissions(db, task=db_task, user=current_user)
+    await check_task_delete_permissions(db_task=db_task, current_user=current_user)
 
-    return await task.remove(db, id=task_id)
+    removed_task = await task.remove(db, id=task_id)
+
+    return TaskDetail(
+        id=removed_task.id,
+        title=removed_task.title,
+        description=removed_task.description,
+        creator=removed_task.creator,
+        status=removed_task.status,
+        assignees=[assignee.user for assignee in removed_task.assignees],
+        watchers=[watcher.user for watcher in removed_task.watchers],
+    )
