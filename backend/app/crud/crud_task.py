@@ -33,7 +33,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         """Получение списка задач с загрузкой связанных объектов"""
         query = (
             select(Task)
-            .options(selectinload(Task.creator), selectinload(Task.status))
+            .options(
+                selectinload(Task.creator),
+                selectinload(Task.status),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -47,7 +52,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         query = (
             select(Task)
             .where(Task.creator_id == creator_id)
-            .options(selectinload(Task.creator), selectinload(Task.status))
+            .options(
+                selectinload(Task.creator),
+                selectinload(Task.status),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -62,7 +72,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             select(Task)
             .join(TaskAssignee, Task.id == TaskAssignee.task_id)
             .where(TaskAssignee.user_id == user_id)
-            .options(selectinload(Task.creator), selectinload(Task.status))
+            .options(
+                selectinload(Task.creator),
+                selectinload(Task.status),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -77,7 +92,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             select(Task)
             .join(TaskWatcher, Task.id == TaskWatcher.task_id)
             .where(TaskWatcher.user_id == user_id)
-            .options(selectinload(Task.creator), selectinload(Task.status))
+            .options(
+                selectinload(Task.creator),
+                selectinload(Task.status),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -108,7 +128,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     ),
                 )
             )
-            .options(selectinload(Task.creator), selectinload(Task.status))
+            .options(
+                selectinload(Task.creator),
+                selectinload(Task.status),
+                selectinload(Task.assignees).options(selectinload(TaskAssignee.user)),
+                selectinload(Task.watchers).options(selectinload(TaskWatcher.user)),
+            )
             .offset(skip)
             .limit(limit)
         )

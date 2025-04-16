@@ -298,34 +298,42 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                 </Formik>
               ) : (
                 <>
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <h2 className="mb-0">{currentTask?.title}</h2>
+                  <div className="task-header mb-4 d-flex justify-content-between align-items-start">
+                  <div>
+                    <h2 className="mb-2">{currentTask?.title}</h2>
+                    <div className="task-meta">
+                      <div className="d-flex align-items-center mb-1">
+                        <FaUser className="me-1 text-muted" />
+                        <small className="text-muted">
+                          Created by {currentTask?.creator?.username} on {currentTask && format(new Date(currentTask.created_at), 'MMM dd, yyyy HH:mm')}
+                        </small>
+                      </div>
+                      {currentTask?.updated_at && (
+                        <div>
+                          <small className="text-muted">
+                            Last updated: {format(new Date(currentTask.updated_at), 'MMM dd, yyyy HH:mm')}
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
                     {currentTask?.status && canEdit ? (
                       <Dropdown>
-                        <Dropdown.Toggle
-                          as="div"
-                          id="dropdown-status"
-                          className="pointer-cursor"
-                          bsPrefix="dropdown-toggle-no-caret"
-                        >
+                        <Dropdown.Toggle as="div" id="dropdown-status" className="pointer-cursor" bsPrefix="dropdown-toggle-no-caret">
                           <Badge 
                             bg={getStatusBadgeVariant(currentTask.status.title)}
                             className="d-flex align-items-center px-3 py-2"
                             style={{ cursor: 'pointer' }}
                           >
                             {isChangingStatus ? (
-                              <Spinner 
-                                animation="border" 
-                                size="sm" 
-                                className="me-1"
-                                style={{ height: '0.75rem', width: '0.75rem' }}
-                              />
+                              <Spinner animation="border" size="sm" className="me-1" style={{ height: '0.75rem', width: '0.75rem' }} />
                             ) : null}
                             {currentTask.status.title}
                             <FaCaretDown className="ms-2" />
                           </Badge>
                         </Dropdown.Toggle>
-
                         <Dropdown.Menu>
                           {statuses.map(status => (
                             <Dropdown.Item 
@@ -333,9 +341,7 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                               onClick={() => handleStatusChange(status.id)}
                               active={status.id === currentTask.status_id}
                             >
-                              <Badge bg={getStatusBadgeVariant(status.title)} className="me-2">
-                                &nbsp;
-                              </Badge>
+                              <Badge bg={getStatusBadgeVariant(status.title)} className="me-2">&nbsp;</Badge>
                               {status.title}
                             </Dropdown.Item>
                           ))}
@@ -345,31 +351,18 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                       <StatusBadge status={currentTask.status} />
                     ) : null}
                   </div>
+                </div>
 
-                  <div className="task-meta mb-4">
-                    <div className="d-flex align-items-center mb-1">
-                      <FaUser className="me-1 text-muted" />
-                      <small className="text-muted">
-                        Created by {currentTask?.creator?.username} on {currentTask && format(new Date(currentTask.created_at), 'MMM dd, yyyy HH:mm')}
-                      </small>
-                    </div>
-                    {currentTask?.updated_at && (
-                      <div>
-                        <small className="text-muted">
-                          Last updated: {format(new Date(currentTask.updated_at), 'MMM dd, yyyy HH:mm')}
-                        </small>
-                      </div>
-                    )}
-                  </div>
-
+                <div className="task-content">
                   <h5 className="mb-3">Description:</h5>
-                  <div className="task-description">
+                  <div className="task-description-container">
                     {currentTask?.description ? (
-                      <MarkdownRenderer content={currentTask.description} />
+                      <MarkdownRenderer content={currentTask.description} className="task-description" />
                     ) : (
                       <p className="text-muted fst-italic">No description provided</p>
                     )}
                   </div>
+                </div>
                 </>
               )}
             </Card.Body>

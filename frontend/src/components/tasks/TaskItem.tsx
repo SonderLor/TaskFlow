@@ -35,6 +35,9 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
+  // Проверка наличия исполнителей для корректного отображения
+  const hasAssignees = task.assignees && Array.isArray(task.assignees) && task.assignees.length > 0;
+  
   return (
     <Card className="mb-3 shadow-sm task-item">
       <Card.Body>
@@ -45,12 +48,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
           {task.status && <StatusBadge status={task.status} />}
         </div>
         
-        <div className="task-description mb-3">
+        <div className="task-description-preview mb-3" style={{ minHeight: "80px" }}>
           {task.description ? (
             <MarkdownRenderer 
               content={task.description} 
               truncate={true} 
-              maxLength={200} 
+              maxLength={400} // Увеличиваем количество отображаемых символов в 2 раза
             />
           ) : (
             <p className="text-muted fst-italic">No description provided</p>
@@ -59,7 +62,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         
         <div className="d-flex justify-content-between align-items-center task-meta">
           <div className="task-assignees">
-            {task.assignees && task.assignees.length > 0 ? (
+            {hasAssignees ? (
               <div className="d-flex align-items-center">
                 <small className="text-muted me-2">Assigned to:</small>
                 <div className="d-flex">

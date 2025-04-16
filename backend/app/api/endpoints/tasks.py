@@ -11,13 +11,30 @@ from app.api.dependencies.tasks import (
 )
 from app.crud import task
 from app.db import get_db
-from app.models import User
+from app.models import User, Task as TaskModel
 from app.schemas import Task, TaskCreate, TaskDetail, TaskUpdate
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Task])
+def task_to_detail(t: TaskModel) -> TaskDetail:
+    """Преобразует объект модели Task в схему TaskDetail"""
+    return TaskDetail(
+        id=t.id,
+        title=t.title,
+        description=t.description,
+        creator=t.creator,
+        status=t.status,
+        assignees=[assignee.user for assignee in t.assignees],
+        watchers=[watcher.user for watcher in t.watchers],
+        created_at=t.created_at,
+        updated_at=t.updated_at,
+        status_id=t.status_id,
+        creator_id=t.creator_id
+    )
+
+
+@router.get("/", response_model=List[TaskDetail])
 async def read_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -27,8 +44,8 @@ async def read_tasks(
     """
     Получение списка задач
     """
-    tasks = await task.get_multi(db, skip=skip, limit=limit)
-    return tasks
+    db_tasks = await task.get_multi(db, skip=skip, limit=limit)
+    return [task_to_detail(t) for t in db_tasks]
 
 
 @router.post("/", response_model=TaskDetail)
@@ -47,18 +64,10 @@ async def create_task(
 
     created_task = await task.create(db, obj_in=TaskCreate(**task_data))
 
-    return TaskDetail(
-        id=created_task.id,
-        title=created_task.title,
-        description=created_task.description,
-        creator=created_task.creator,
-        status=created_task.status,
-        assignees=[assignee.user for assignee in created_task.assignees],
-        watchers=[watcher.user for watcher in created_task.watchers],
-    )
+    return task_to_detail(created_task)
 
 
-@router.get("/me", response_model=List[Task])
+@router.get("/me", response_model=List[TaskDetail])
 async def read_my_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -69,13 +78,13 @@ async def read_my_tasks(
     Получение задач текущего пользователя
     (созданные им, назначенные ему или за которыми он наблюдает)
     """
-    tasks = await task.get_user_tasks(
+    db_tasks = await task.get_user_tasks(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
-    return tasks
+    return [task_to_detail(t) for t in db_tasks]
 
 
-@router.get("/created", response_model=List[Task])
+@router.get("/created", response_model=List[TaskDetail])
 async def read_created_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -85,13 +94,13 @@ async def read_created_tasks(
     """
     Получение задач, созданных текущим пользователем
     """
-    tasks = await task.get_by_creator(
+    db_tasks = await task.get_by_creator(
         db, creator_id=current_user.id, skip=skip, limit=limit
     )
-    return tasks
+    return [task_to_detail(t) for t in db_tasks]
 
 
-@router.get("/assigned", response_model=List[Task])
+@router.get("/assigned", response_model=List[TaskDetail])
 async def read_assigned_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -101,13 +110,13 @@ async def read_assigned_tasks(
     """
     Получение задач, назначенных текущему пользователю
     """
-    tasks = await task.get_assigned_to_user(
+    db_tasks = await task.get_assigned_to_user(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
-    return tasks
+    return [task_to_detail(t) for t in db_tasks]
 
 
-@router.get("/watching", response_model=List[Task])
+@router.get("/watching", response_model=List[TaskDetail])
 async def read_watching_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -117,10 +126,10 @@ async def read_watching_tasks(
     """
     Получение задач, за которыми наблюдает текущий пользователь
     """
-    tasks = await task.get_watched_by_user(
+    db_tasks = await task.get_watched_by_user(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
-    return tasks
+    return [task_to_detail(t) for t in db_tasks]
 
 
 @router.get("/{task_id}", response_model=TaskDetail)
@@ -141,15 +150,7 @@ async def read_task(
     # Проверка прав доступа к задаче
     await check_task_permissions(db_task=db_task, current_user=current_user)
 
-    return TaskDetail(
-        id=db_task.id,
-        title=db_task.title,
-        description=db_task.description,
-        creator=db_task.creator,
-        status=db_task.status,
-        assignees=[assignee.user for assignee in db_task.assignees],
-        watchers=[watcher.user for watcher in db_task.watchers],
-    )
+    return task_to_detail(db_task)
 
 
 @router.put("/{task_id}", response_model=TaskDetail)
@@ -175,15 +176,7 @@ async def update_task(
     updated_task = await task.update(db, db_obj=db_task, obj_in=task_in)
     await db.refresh(updated_task)
 
-    return TaskDetail(
-        id=updated_task.id,
-        title=updated_task.title,
-        description=updated_task.description,
-        creator=updated_task.creator,
-        status=updated_task.status,
-        assignees=[assignee.user for assignee in updated_task.assignees],
-        watchers=[watcher.user for watcher in updated_task.watchers],
-    )
+    return task_to_detail(updated_task)
 
 
 @router.delete("/{task_id}", response_model=TaskDetail)
@@ -207,12 +200,4 @@ async def delete_task(
 
     removed_task = await task.remove(db, id=task_id)
 
-    return TaskDetail(
-        id=removed_task.id,
-        title=removed_task.title,
-        description=removed_task.description,
-        creator=removed_task.creator,
-        status=removed_task.status,
-        assignees=[assignee.user for assignee in removed_task.assignees],
-        watchers=[watcher.user for watcher in removed_task.watchers],
-    )
+    return task_to_detail(removed_task)

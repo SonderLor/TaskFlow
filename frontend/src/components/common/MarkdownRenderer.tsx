@@ -1,3 +1,4 @@
+// src/components/common/MarkdownRenderer.tsx
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -16,7 +17,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content, 
   className,
   truncate = false,
-  maxLength = 150
+  maxLength = 400  // Увеличиваем по умолчанию
 }) => {
   // Функция для обрезки Markdown текста
   const truncateMarkdown = (text: string, length: number): string => {
@@ -36,7 +37,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   const displayContent = truncate ? truncateMarkdown(content, maxLength) : content;
   
   return (
-    <div className={`markdown-body ${className || ''} ${truncate ? 'truncated' : ''}`}>
+    <div className={`markdown-body ${className || ''} ${truncate ? 'truncated' : 'full-content'}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
