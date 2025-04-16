@@ -3,7 +3,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user
+from app.api.dependencies.auth import get_current_active_user, get_current_superuser
 from app.api.dependencies.tasks import (
     check_task_delete_permissions,
     check_task_edit_permissions,
@@ -22,7 +22,7 @@ async def read_tasks(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_superuser),
 ) -> Any:
     """
     Получение списка задач

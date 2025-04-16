@@ -12,6 +12,12 @@ from app.schemas import UserCreate, UserUpdate
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     """CRUD операции для пользователей"""
 
+    async def get_by_id(self, db: AsyncSession, *, id: int) -> Optional[User]:
+        """Получение пользователя по id"""
+        query = select(User).where(User.id == id)
+        result = await db.execute(query)
+        return result.scalars().first()
+
     async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[User]:
         """Получение пользователя по email"""
         query = select(User).where(User.email == email)

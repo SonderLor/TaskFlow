@@ -11,6 +11,7 @@ class CommentBase(BaseSchema):
     author_id: int
     text: str
     attachment_path: Optional[str] = None
+    is_edited: Optional[bool] = False
 
 
 class CommentCreate(CommentBase):
@@ -25,6 +26,7 @@ class CommentUpdate(BaseSchema):
     text: Optional[str] = None
     attachment_path: Optional[str] = None
     mention_ids: Optional[List[int]] = None
+    is_edited: bool = True
 
 
 class Comment(CommentBase, TimestampMixin):
@@ -33,6 +35,7 @@ class Comment(CommentBase, TimestampMixin):
     id: int
     author: Optional[User] = None
     mentions: List[User] = []
+    is_edited: bool
 
 
 class CommentMention(BaseSchema):

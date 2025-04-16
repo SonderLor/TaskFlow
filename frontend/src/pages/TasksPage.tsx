@@ -16,18 +16,29 @@ const TasksPage = () => {
   const navigate = useNavigate();
   const { tasks, myTasks, createdTasks, assignedTasks, watchingTasks, loading } = useSelector((state: RootState) => state.tasks);
   const { statuses } = useSelector((state: RootState) => state.statuses);
-  const [activeTab, setActiveTab] = useState('all');
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isSuperuser = user?.is_superuser === true;
+  const [activeTab, setActiveTab] = useState(isSuperuser ? 'all' : 'my');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
 
   useEffect(() => {
-    dispatch(fetchTasks());
+    if (isSuperuser) {
+      dispatch(fetchTasks());
+    }
+    
     dispatch(fetchMyTasks());
     dispatch(fetchCreatedTasks());
     dispatch(fetchAssignedTasks());
     dispatch(fetchWatchingTasks());
     dispatch(fetchStatuses());
-  }, [dispatch]);
+  }, [dispatch, isSuperuser]);
+
+  useEffect(() => {
+    if (!isSuperuser && activeTab === 'all') {
+      setActiveTab('my');
+    }
+  }, [isSuperuser, activeTab]);
 
   const filteredTasks = (taskList: any[]) => {
     return taskList.filter(task => {
@@ -66,9 +77,11 @@ const TasksPage = () => {
         <Row>
           <Col>
             <Nav variant="tabs" className="mb-3">
-              <Nav.Item>
-                <Nav.Link eventKey="all">All Tasks ({tasks.length})</Nav.Link>
-              </Nav.Item>
+              {isSuperuser && (
+                <Nav.Item>
+                  <Nav.Link eventKey="all">All Tasks ({tasks.length})</Nav.Link>
+                </Nav.Item>
+              )}
               <Nav.Item>
                 <Nav.Link eventKey="my">My Tasks ({myTasks.length})</Nav.Link>
               </Nav.Item>
@@ -84,28 +97,30 @@ const TasksPage = () => {
             </Nav>
 
             <Tab.Content>
-              <Tab.Pane eventKey="all">
-                {loading ? (
-                  <div className="text-center p-5">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
+              {isSuperuser && (
+                <Tab.Pane eventKey="all">
+                  {loading ? (
+                    <div className="text-center p-5">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
                     </div>
-                  </div>
-                ) : filteredTasks(tasks).length > 0 ? (
-                  <div className="task-list">
-                    {filteredTasks(tasks).map(task => (
-                      <TaskItem key={task.id} task={task} />
-                    ))}
-                  </div>
-                ) : (
-                  <Card className="text-center p-5">
-                    <Card.Body>
-                      <h4>No tasks found</h4>
-                      <p>No tasks match your search criteria.</p>
-                    </Card.Body>
-                  </Card>
-                )}
-              </Tab.Pane>
+                  ) : filteredTasks(tasks).length > 0 ? (
+                    <div className="task-list">
+                      {filteredTasks(tasks).map(task => (
+                        <TaskItem key={task.id} task={task} />
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className="text-center p-5">
+                      <Card.Body>
+                        <h4>No tasks found</h4>
+                        <p>No tasks match your search criteria.</p>
+                      </Card.Body>
+                    </Card>
+                  )}
+                </Tab.Pane>
+              )}
 
               <Tab.Pane eventKey="my">
                 {loading ? (

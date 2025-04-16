@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -17,10 +18,25 @@ import { RootState, AppDispatch } from './store';
 function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
+
+  // Сохраняем текущий путь в localStorage при изменении
+  useEffect(() => {
+    localStorage.setItem('lastPath', location.pathname);
+  }, [location]);
+
+  // Восстанавливаем последний путь при загрузке приложения
+  useEffect(() => {
+    const savedPath = localStorage.getItem('lastPath');
+    if (savedPath && window.location.pathname === '/') {
+      navigate(savedPath);
+    }
+  }, [navigate]);
 
   if (loading) {
     return (

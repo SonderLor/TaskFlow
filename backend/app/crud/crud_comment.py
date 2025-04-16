@@ -45,7 +45,7 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
             .options(selectinload(Comment.author), selectinload(Comment.mentions))
             .offset(skip)
             .limit(limit)
-        )
+        ).order_by(Comment.created_at)
         result = await db.execute(query)
         return result.scalars().all()
 
@@ -67,7 +67,7 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
 
         await db.commit()
         await db.refresh(db_obj)
-        return db_obj
+        return await self.get(db, id=db_obj.id)
 
     async def update(
         self,

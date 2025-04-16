@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Container, Row, Col, Form, Button, Card, Alert, Spinner, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Card, Alert, Spinner, Badge, Dropdown } from 'react-bootstrap';
 import { Formik, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { FaSave, FaTrash, FaArrowLeft, FaUser } from 'react-icons/fa';
+import { FaSave, FaTrash, FaArrowLeft, FaUser, FaCaretDown } from 'react-icons/fa';
 import { format } from 'date-fns';
 
 import { RootState, AppDispatch } from '../store';
@@ -13,13 +13,25 @@ import { fetchStatuses } from '../store/slices/statusSlice';
 import { fetchUsers } from '../store/slices/userSlice';
 import { TaskCreate, TaskUpdate } from '../types';
 import TaskComments from '../components/tasks/TaskComments';
-import UserSelect from '../components/common/UserSelect';
+import EnhancedUserSelect from '../components/common/EnhancedUserSelect';
 import StatusBadge from '../components/common/StatusBadge';
+import { getStatusBadgeVariant } from '../utils/taskUtils';
+import MarkdownEditor from '../components/common/MarkdownEditor';
+import MarkdownRenderer from '../components/common/MarkdownRenderer';
 
-const taskSchema = Yup.object().shape({
+// Отдельная схема для создания задачи с обязательным статусом
+const taskCreateSchema = Yup.object().shape({
   title: Yup.string().required('Title is required').max(100, 'Title is too long'),
   description: Yup.string(),
-  status_id: Yup.number().nullable(),
+  status_id: Yup.number().required('Status is required'),
+  assignee_ids: Yup.array().of(Yup.number()),
+  watcher_ids: Yup.array().of(Yup.number()),
+});
+
+// Схема для обновления задачи без статуса
+const taskUpdateSchema = Yup.object().shape({
+  title: Yup.string().required('Title is required').max(100, 'Title is too long'),
+  description: Yup.string(),
   assignee_ids: Yup.array().of(Yup.number()),
   watcher_ids: Yup.array().of(Yup.number()),
 });
@@ -39,10 +51,16 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   
   const [isEditing, setIsEditing] = useState(isCreating);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
-  const canEditOrDelete = currentUser && (
+  const canEdit = currentUser && (
     currentUser.is_superuser ||
-    (currentTask && (currentTask.creator?.id === currentUser.id || currentTask.assignees.some(assignee => assignee.id === currentUser.id)))
+    (currentTask && (currentTask.creator?.id === currentUser.id || currentTask.assignees?.some(assignee => assignee.id === currentUser.id)))
+  );
+
+  const canDelete = currentUser && (
+    currentUser.is_superuser ||
+    (currentTask && (currentTask.creator?.id === currentUser.id))
   );
 
   useEffect(() => {
@@ -79,6 +97,22 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
     }
   };
 
+  const handleStatusChange = async (statusId: number) => {
+    if (taskId && currentTask && statusId !== currentTask.status_id) {
+      try {
+        setIsChangingStatus(true);
+        await dispatch(updateTask({ 
+          id: Number(taskId), 
+          task: { status_id: statusId } 
+        })).unwrap();
+      } catch (error) {
+        console.error('Failed to update status:', error);
+      } finally {
+        setIsChangingStatus(false);
+      }
+    }
+  };
+
   if (loading && !isCreating) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
@@ -106,14 +140,13 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
     ? {
         title: '',
         description: '',
-        status_id: statuses.length > 0 ? statuses[0].id : null,
+        status_id: statuses.length > 0 ? statuses[0].id : undefined,
         assignee_ids: [],
         watcher_ids: [],
       }
     : {
         title: currentTask?.title || '',
         description: currentTask?.description || '',
-        status_id: currentTask?.status_id || null,
         assignee_ids: currentTask?.assignees?.map(a => a.id) || [],
         watcher_ids: currentTask?.watchers?.map(w => w.id) || [],
       };
@@ -126,37 +159,41 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
             <FaArrowLeft className="me-2" /> Back to Tasks
           </Button>
           
-          {!isCreating && !isEditing && canEditOrDelete && (
+          {!isCreating && !isEditing && (
             <>
-              <Button 
-                variant="primary" 
-                onClick={() => setIsEditing(true)} 
-                className="me-2"
-                disabled={loading}
-              >
-                Edit Task
-              </Button>
+              {canEdit && (
+                <Button 
+                  variant="primary" 
+                  onClick={() => setIsEditing(true)} 
+                  className="me-2"
+                  disabled={loading}
+                >
+                  Edit Task
+                </Button>
+              )}
               
-              <Button 
-                variant="danger" 
-                onClick={handleDelete}
-                disabled={loading}
-              >
-                <FaTrash className="me-2" /> Delete
-              </Button>
+              {canDelete && (
+                <Button 
+                  variant="danger" 
+                  onClick={handleDelete}
+                  disabled={loading}
+                >
+                  <FaTrash className="me-2" /> Delete
+                </Button>
+              )}
             </>
           )}
         </Col>
       </Row>
 
       <Row>
-        <Col lg={8}>
+        <Col md={8}>
           <Card className="shadow-sm mb-4">
             <Card.Body>
               {isEditing ? (
                 <Formik
                   initialValues={initialValues}
-                  validationSchema={taskSchema}
+                  validationSchema={isCreating ? taskCreateSchema : taskUpdateSchema}
                   onSubmit={handleSubmit}
                   enableReinitialize
                 >
@@ -177,15 +214,15 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                       </Form.Group>
 
                       <Form.Group className="mb-3">
-                        <Form.Label>Description</Form.Label>
-                        <Field
-                          name="description"
-                          as={Form.Control}
-                          component="textarea"
-                          rows={5}
-                          placeholder="Enter task description"
-                          className="custom-textarea"
-                        />
+                        <Form.Label>Description (Markdown supported)</Form.Label>
+                        {/* Заменяем стандартный textarea на MarkdownEditor */}
+                        <div className="markdown-editor-container">
+                          <MarkdownEditor
+                            value={values.description}
+                            onChange={(value) => setFieldValue('description', value)}
+                            placeholder="Enter task description using Markdown"
+                          />
+                        </div>
                         <ErrorMessage
                           name="description"
                           component={Form.Text}
@@ -193,38 +230,46 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                         />
                       </Form.Group>
 
-                      <Form.Group className="mb-3">
-                        <Form.Label>Status</Form.Label>
-                        <Field
-                          name="status_id"
-                          as={Form.Select}
-                        >
-                          <option value="">Select Status</option>
-                          {statuses.map(status => (
-                            <option key={status.id} value={status.id}>
-                              {status.title}
-                            </option>
-                          ))}
-                        </Field>
-                      </Form.Group>
+                      {/* Показываем выбор статуса только при создании */}
+                      {isCreating && (
+                        <Form.Group className="mb-3">
+                          <Form.Label>Status</Form.Label>
+                          <Field
+                            name="status_id"
+                            as={Form.Select}
+                          >
+                            <option value="">Select Status</option>
+                            {statuses.map(status => (
+                              <option key={status.id} value={status.id}>
+                                {status.title}
+                              </option>
+                            ))}
+                          </Field>
+                          <ErrorMessage
+                            name="status_id"
+                            component={Form.Text}
+                            className="text-danger"
+                          />
+                        </Form.Group>
+                      )}
 
                       <Form.Group className="mb-3">
                         <Form.Label>Assignees</Form.Label>
-                        <UserSelect
+                        <EnhancedUserSelect
                           users={users}
                           selectedUserIds={values.assignee_ids || []}
                           onChange={(selectedIds) => setFieldValue('assignee_ids', selectedIds)}
-                          placeholder="Select assignees"
+                          placeholder="Search for assignees..."
                         />
                       </Form.Group>
 
                       <Form.Group className="mb-3">
                         <Form.Label>Watchers</Form.Label>
-                        <UserSelect
+                        <EnhancedUserSelect
                           users={users}
                           selectedUserIds={values.watcher_ids || []}
                           onChange={(selectedIds) => setFieldValue('watcher_ids', selectedIds)}
-                          placeholder="Select watchers"
+                          placeholder="Search for watchers..."
                         />
                       </Form.Group>
 
@@ -255,27 +300,72 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                 <>
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <h2 className="mb-0">{currentTask?.title}</h2>
-                    {currentTask?.status && (
+                    {currentTask?.status && canEdit ? (
+                      <Dropdown>
+                        <Dropdown.Toggle
+                          as="div"
+                          id="dropdown-status"
+                          className="pointer-cursor"
+                          bsPrefix="dropdown-toggle-no-caret"
+                        >
+                          <Badge 
+                            bg={getStatusBadgeVariant(currentTask.status.title)}
+                            className="d-flex align-items-center px-3 py-2"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {isChangingStatus ? (
+                              <Spinner 
+                                animation="border" 
+                                size="sm" 
+                                className="me-1"
+                                style={{ height: '0.75rem', width: '0.75rem' }}
+                              />
+                            ) : null}
+                            {currentTask.status.title}
+                            <FaCaretDown className="ms-2" />
+                          </Badge>
+                        </Dropdown.Toggle>
+
+                        <Dropdown.Menu>
+                          {statuses.map(status => (
+                            <Dropdown.Item 
+                              key={status.id}
+                              onClick={() => handleStatusChange(status.id)}
+                              active={status.id === currentTask.status_id}
+                            >
+                              <Badge bg={getStatusBadgeVariant(status.title)} className="me-2">
+                                &nbsp;
+                              </Badge>
+                              {status.title}
+                            </Dropdown.Item>
+                          ))}
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    ) : currentTask?.status ? (
                       <StatusBadge status={currentTask.status} />
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="task-meta mb-4">
-                    <div className="text-muted mb-2">
-                      <FaUser className="me-1" />
-                      Created by {currentTask?.creator?.username} on {currentTask && format(new Date(currentTask.created_at), 'MMM dd, yyyy HH:mm')}
+                    <div className="d-flex align-items-center mb-1">
+                      <FaUser className="me-1 text-muted" />
+                      <small className="text-muted">
+                        Created by {currentTask?.creator?.username} on {currentTask && format(new Date(currentTask.created_at), 'MMM dd, yyyy HH:mm')}
+                      </small>
                     </div>
                     {currentTask?.updated_at && (
-                      <div className="text-muted small">
-                        Last updated: {format(new Date(currentTask.updated_at), 'MMM dd, yyyy HH:mm')}
+                      <div>
+                        <small className="text-muted">
+                          Last updated: {format(new Date(currentTask.updated_at), 'MMM dd, yyyy HH:mm')}
+                        </small>
                       </div>
                     )}
                   </div>
 
-                  <h5>Description:</h5>
-                  <div className="task-description mb-4">
+                  <h5 className="mb-3">Description:</h5>
+                  <div className="task-description">
                     {currentTask?.description ? (
-                      <p>{currentTask.description}</p>
+                      <MarkdownRenderer content={currentTask.description} />
                     ) : (
                       <p className="text-muted fst-italic">No description provided</p>
                     )}
@@ -290,7 +380,7 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
           )}
         </Col>
 
-        <Col lg={4}>
+        <Col md={4}>
           {!isCreating && !isEditing && currentTask && (
             <>
               <Card className="shadow-sm mb-4">
@@ -299,13 +389,13 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                   {currentTask.assignees && currentTask.assignees.length > 0 ? (
                     <ul className="list-unstyled">
                       {currentTask.assignees.map(user => (
-                        <li key={user.id} className="mb-2 d-flex align-items-center">
-                          <div className="avatar-placeholder me-2">
+                        <li key={user.id} className="d-flex align-items-center mb-2">
+                          <div className="user-avatar me-2">
                             {user.username.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
                             <strong>{user.username}</strong>
-                            <div className="text-muted small">{user.email}</div>
+                            <div className="small text-muted">{user.email}</div>
                           </div>
                         </li>
                       ))}
@@ -322,13 +412,13 @@ const TaskDetailPage = ({ isCreating = false }: TaskDetailPageProps) => {
                   {currentTask.watchers && currentTask.watchers.length > 0 ? (
                     <ul className="list-unstyled">
                       {currentTask.watchers.map(user => (
-                        <li key={user.id} className="mb-2 d-flex align-items-center">
-                          <div className="avatar-placeholder me-2">
+                        <li key={user.id} className="d-flex align-items-center mb-2">
+                          <div className="user-avatar me-2">
                             {user.username.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
                             <strong>{user.username}</strong>
-                            <div className="text-muted small">{user.email}</div>
+                            <div className="small text-muted">{user.email}</div>
                           </div>
                         </li>
                       ))}

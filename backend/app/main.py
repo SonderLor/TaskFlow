@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import auth, statuses, tasks, users
+from app.api.websockets import router as websocket_router
 from app.core.config import settings
 
 app = FastAPI(
@@ -16,6 +17,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
 app.include_router(statuses.router, prefix="/api/v1/statuses", tags=["statuses"])
+app.include_router(websocket_router, prefix="/api/v1", tags=["websockets"])
 
 # Настройка CORS
 if settings.BACKEND_CORS_ORIGINS:
